@@ -1,7 +1,7 @@
 {
   "name": "vec2-tile-layer",
   "description": "single layer of map tiles",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "homepage": "https://github.com/dominictarr/vec2-tile-layer",
   "repository": {
     "type": "git",
