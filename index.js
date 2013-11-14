@@ -14,9 +14,9 @@ function px(n) {
 
 function Layer (opts) {
   opts = opts || {}
-  
+  this.size = opts.size || new Vec2(1000, 1000)
   this.scale = opts.scale || 1
-
+  
   //tile size on map scale
   //defaults to degrees lat and long?
   this.tileScale = new Vec2(1000/Math.pow(2, this.scale), 1000/Math.pow(2, this.scale))
@@ -31,7 +31,7 @@ function Layer (opts) {
   //tile size in pixels
   this.tileSize = new Vec2(256, 256)
   this.tiles = {}
-  if('undefined' !== typeof window)
+  if('undefined' !== typeof window) {
     this.div = h('div', {
       style: {
         //'pointer-events' : 'none',
@@ -41,11 +41,17 @@ function Layer (opts) {
         position         : 'absolute',
         margin           : px(0),
         padding          : px(0),
-        width            : px(opts.width || 1000),
-        height           : px(opts.height || 1000),
+        width            : px(this.size.x),
+        height           : px(this.size.y),
         overflow         : 'hidden'
       }
     })
+    var self = this
+    this.size.change(function () {
+      div.size.width  = px(self.size.x)
+      div.size.height = px(self.size.y)
+    })
+  }
 }
 
 var l = Layer.prototype
