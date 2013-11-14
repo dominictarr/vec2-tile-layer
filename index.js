@@ -6,48 +6,65 @@ module.exports = Layer
 
 var L = null
 
-function Layer (scale) {
-  this.scale = scale
+function px(n) {
+  if('number' === typeof n)
+    return n + 'px'
+  else return n || '0px'
+}
+
+function Layer (opts) {
+  opts = opts || {}
+  
+  this.scale = opts.scale || 1
 
   //tile size on map scale
   //defaults to degrees lat and long?
-  this.tileScale = new Vec2(360/Math.pow(2, scale), 180/Math.pow(2, scale))
+  this.tileScale = new Vec2(1000/Math.pow(2, this.scale), 1000/Math.pow(2, this.scale))
                     //south west to north east
 
-  this.min = new Rec2().set(-180, -90, 360, 180)
-  this.max = this.min.bound.set(180, 90)
+  this.min = new Rec2().set(0, 0)
+  this.max = this.min.bound.set(1000, 1000)
 
   this.minTile = new Vec2()
   this.maxTile = new Vec2()
+  this.tileWidth = new Vec2()
   //tile size in pixels
   this.tileSize = new Vec2(256, 256)
   this.tiles = {}
   if('undefined' !== typeof window)
     this.div = h('div', {
-      'pointer-events' : 'none',
-      left             : '0px',
-      top              : '0px',
-      'z-index'        : this.scale,
-      position         : 'absolute'
+      style: {
+        //'pointer-events' : 'none',
+        left             : px(0),
+        top              : px(0),
+        'z-index'        : this.scale,
+        position         : 'absolute',
+        margin           : px(0),
+        padding          : px(0),
+        width            : px(opts.width || 1000),
+        height           : px(opts.height || 1000),
+        overflow         : 'hidden'
+      }
     })
 }
 
 var l = Layer.prototype
 
-l.tileRange = function (map) {
-  console.log(JSON.stringify([[map, map.bound], [this.min, this.max], this.tileScale]))
+l.tileRange = function (min, max) {
+  max = min.bound || max
+  console.log(JSON.stringify([[min, max], [this.min, this.max], this.tileScale]))
 
   var maxX = Math.floor((this.max.x - this.min.x) / this.tileScale.x) - 1
   var maxY = Math.floor((this.max.y - this.min.y) / this.tileScale.y) - 1
 
   this.minTile.set(
-    Math.max(Math.floor((map.x - this.min.x)/this.tileScale.x), 0),
-    Math.max(Math.floor((map.y - this.min.y) / this.tileScale.y), 0)
+    Math.max(Math.floor((min.x - this.min.x) / this.tileScale.x), 0),
+    Math.max(Math.floor((min.y - this.min.y) / this.tileScale.y), 0)
   )
 
   this.maxTile.set(
-    Math.min(Math.floor((map.bound.x - this.min.x) / this.tileScale.x) - 1, maxX),
-    Math.min(Math.floor((map.bound.y - this.min.y) / this.tileScale.y) - 1, maxY)
+    Math.min(Math.floor((max.x - this.min.x) / this.tileScale.x) - 1, maxX),
+    Math.min(Math.floor((max.y - this.min.y) / this.tileScale.y) - 1, maxY)
   )
   
   return this
@@ -55,7 +72,7 @@ l.tileRange = function (map) {
 
 
 l.getTile = function (x, y, z) {
-
+  console.log('get tile', x, y, z)
   /*
   //baidu
   var src = 'http://online1.map.bdimg.com/tile/?qt=tile'
@@ -78,9 +95,9 @@ l.getTile = function (x, y, z) {
   return img = h('img', {src: src, onload: function () {
 
   }, onerror: function (e) {
-    img.style.opacity = 0.1
-    img.style.display = 'none'
-  }})
+  //  img.style.opacity = 0.1
+//    img.style.display = 'none'
+  }, style: { left: px(0), top: px(0) }})
 }
 
 l.add = function (x, y) {
@@ -99,7 +116,11 @@ l.add = function (x, y) {
   img.screenOrigin = r
   this.tiles[id] = img
 
-  img.origin = new Vec2(x, y)
+  img.pos = new Vec2(x, y)
+  img.worldOrigin = new Vec2(
+    this.min.x + this.tileScale.x*x,
+    this.min.y + this.tileScale.y*y
+  )
   return img
 }
 
@@ -118,7 +139,7 @@ l.show = function (show) {
 var o = new Vec2()
   var unit = new Vec2(1, 1)
 
-l._update = function (min, max, zoom) {
+l.update = function (min, max, zoom) {
 
   this.tileRange(min, max)
 
@@ -139,50 +160,37 @@ l._update = function (min, max, zoom) {
     //take the center of the screen, 
     //subtract 
 
-    //img.screenOrigin.set(
-
-    //remove tiles that arn't in view anymore
-    if(
-      img.origin.x < m.x || img.origin.y < m.y ||
-      img.origin.x > M.x || img.origin.y > M.y
-    ) {
-      this.remove(img.origin.x, img.origin.y)
-    }
-  }
-}
-
-l.update = function (min, max, view) {
-  var scale =  Math.pow(2, this.scale)
-  var z = Math.log(Math.round(view.zoom()/256))/Math.LN2
-
-  var m = this.min = tiles.min(min, this.scale, this.min)
-  var M = this.max = tiles.min(max, this.scale, this.max)
-
-  var scale = Math.pow(2, this.scale - 1)
-
-  for(var i =  m.x; i <= M.x; i++)
-    for(var j =  m.y; j <= M.y; j++)
-      this.add(i, j)
-
-  for(var k in this.tiles) {
-    var img = this.tiles[k]
-    
-    img.screenOrigin.set(
-      o.set(img.origin)
-        .divide(scale)
-        .subtract(view.center)
-        .multiply(Math.round(view.zoom()))
-        .add(view._viewCenter)
-    )
-
-    img.style.width = Math.floor(view.zoom()/scale) + 'px'
+    console.log(img.worldOrigin, m, M)
 
     if(
-      img.origin.x < m.x || img.origin.y < m.y ||
-      img.origin.x > M.x || img.origin.y > M.y
+      img.pos.x < m.x || img.pos.y < m.y ||
+      img.pos.x > M.x || img.pos.y > M.y
     ) {
-      this.remove(img.origin.x, img.origin.y)
+      this.remove(img.pos.x, img.pos.y)
+    } else {
+
+      img.screenOrigin.set(
+        ((img.worldOrigin.x - (this.min.x - (this.min.x - min.x))) / this.tileScale.x)
+          * this.tileSize.x * 1/zoom.x,
+        ((img.worldOrigin.y - (this.min.y - (this.min.y - min.y))) / this.tileScale.y)
+          * this.tileSize.y * 1/zoom.y
+      )
+
+      //TODO: create a vec2 thing that allows you to apply many calcs like this:
+      // 
+      //  V(img.worldOrigin, this.min, min, this.tileScale, this.tileSize, zoom,
+      //    '((worldOrigin - (_min - (_min - min))) / tileScale) * tileSize * 1/zoom)' 
+      //   )
+      // it would generate a function that applies this directly, so you don't have
+      // to type it out twice.
+
+      img.screenOrigin.size.set(
+        this.tileSize.x * 1/zoom.x,
+        this.tileSize.y * 1/zoom.y
+      )
+
     }
   }
+  return this
 }
 

@@ -8,7 +8,7 @@
     "url": "git://github.com/dominictarr/vec2-tile-layer.git"
   },
   "dependencies": {
-    "vec2-dom": "~1.1.2"
+    "vec2-dom": "~1.1.3"
   },
   "devDependencies": {
     "tape": "~2.1.0"
