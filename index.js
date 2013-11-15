@@ -14,17 +14,17 @@ function px(n) {
 
 function Layer (opts) {
   opts = opts || {}
-  this.size = opts.size || new Vec2(1000, 1000)
+  this.size = opts.size || new Vec2(1024, 1024)
   this.scale = opts.scale || 1
   
   //tile size on map scale
   //defaults to degrees lat and long?
-  console.log('SCALE', this.scale)
-  this.tileScale = new Vec2(1000/Math.pow(2, this.scale), 1000/Math.pow(2, this.scale))
+  console.log('SCALE', this.scale,  Math.pow(2, this.scale), 1024 / Math.pow(2, this.scale))
+  this.tileScale = new Vec2(1024/Math.pow(2, this.scale), 1024/Math.pow(2, this.scale))
                 //south west to north east
 
   this.min = new Rec2().set(0, 0)
-  this.max = this.min.bound.set(1000, 1000)
+  this.max = this.min.bound.set(1024, 1024)
 
   this.minTile = new Vec2()
   this.maxTile = new Vec2()
@@ -176,6 +176,12 @@ l.update = function (min, max, zoom) {
           * this.tileSize.y * zoom.y
       )
 
+      img.screenOrigin.set(
+        (img.worldOrigin.x - min.x) * zoom.x,
+        (img.worldOrigin.y - min.y) * zoom.y
+      )
+
+
       //TODO: create a vec2 thing that allows you to apply many calcs like this:
       // 
       //  V(img.worldOrigin, this.min, min, this.tileScale, this.tileSize, zoom,
@@ -184,11 +190,13 @@ l.update = function (min, max, zoom) {
       // it would generate a function that applies this directly, so you don't have
       // to type it out twice.
 
-      img.screenOrigin.size.set(
-        this.tileSize.x * zoom.x * 2,
-        this.tileSize.y * zoom.y * 2
-      )
 
+      var scaleFactor = Math.pow(2, this.scale - 1)
+
+      img.screenOrigin.size.set(
+        (this.tileSize.x * zoom.x * 2)/scaleFactor,
+        (this.tileSize.y * zoom.y * 2)/scaleFactor
+      )
     }
   }
   return this
