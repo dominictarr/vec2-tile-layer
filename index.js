@@ -19,8 +19,9 @@ function Layer (opts) {
   
   //tile size on map scale
   //defaults to degrees lat and long?
+  console.log('SCALE', this.scale)
   this.tileScale = new Vec2(1000/Math.pow(2, this.scale), 1000/Math.pow(2, this.scale))
-                    //south west to north east
+                //south west to north east
 
   this.min = new Rec2().set(0, 0)
   this.max = this.min.bound.set(1000, 1000)
@@ -58,14 +59,13 @@ var l = Layer.prototype
 
 l.tileRange = function (min, max) {
   max = min.bound || max
-//  console.log(JSON.stringify([[min, max], [this.min, this.max], this.tileScale]))
 
-  var maxX = Math.floor((this.max.x - this.min.x) / this.tileScale.x)
-  var maxY = Math.floor((this.max.y - this.min.y) / this.tileScale.y)
+  var maxX = Math.floor((this.max.x - this.min.x) / this.tileScale.x) - 1
+  var maxY = Math.floor((this.max.y - this.min.y) / this.tileScale.x) - 1
 
   this.minTile.set(
-    Math.max(Math.floor(min.x / this.tileScale.x) , 0),
-    Math.max(Math.floor(min.y / this.tileScale.y) , 0)
+    Math.max(Math.floor(min.x / this.tileScale.x), 0),
+    Math.max(Math.floor(min.y / this.tileScale.y), 0)
   )
 
   this.maxTile.set(
@@ -78,7 +78,6 @@ l.tileRange = function (min, max) {
 
 
 l.getTile = function (x, y, z) {
-  //console.log('get tile', x, y, z)
   /*
   //baidu
   var src = 'http://online1.map.bdimg.com/tile/?qt=tile'
@@ -98,12 +97,7 @@ l.getTile = function (x, y, z) {
   ;
 
   var img
-  return img = h('img', {src: src, onload: function () {
-
-  }, onerror: function (e) {
-  //  img.style.opacity = 0.1
-//    img.style.display = 'none'
-  }, style: { left: px(0), top: px(0) }})
+  return img = h('img', {src: src, style: { left: px(0), top: px(0) }})
 }
 
 l.add = function (x, y) {
@@ -149,19 +143,13 @@ l.update = function (min, max, zoom) {
 
   this.tileRange(min, max)
 
-//  this.tileWidth.set(
-//    Math.floor(this.tileSize.x*1/zoom.x),
-//    Math.floor(this.tileSize.x*1/zoom.y)
-//  )
-
   this.tileWidth.set(
     Math.floor(this.tileSize.x*zoom.x),
     Math.floor(this.tileSize.x*zoom.y)
   )
 
   var m = this.minTile, M = this.maxTile
-  NOTE.textContent += '\n' + JSON.stringify({min: m, max: M})
-  console.log(JSON.stringify([m, M]))
+  //NOTE.textContent += '\n' + JSON.stringify({min: m, max: M})
 
   for(var i =  m.x; i <= M.x; i++)
     for(var j =  m.y; j <= M.y; j++)
@@ -177,26 +165,16 @@ l.update = function (min, max, zoom) {
       this.remove(img.pos.x, img.pos.y)
     } else {
 
-//      img.screenOrigin.set(
-//        ((img.worldOrigin.x - (this.min.x - (this.min.x - min.x))) / this.tileScale.x)
-//          * this.tileSize.x * 1/zoom.x,
-//        ((img.worldOrigin.y - (this.min.y - (this.min.y - min.y))) / this.tileScale.y)
-//          * this.tileSize.y * 1/zoom.y
-//      )
+    var sx = this.tileScale.x/2
+    var sy = this.tileScale.y/2
 
       img.screenOrigin.set(
-        ((img.worldOrigin.x - (this.min.x - (this.min.x - min.x))) / this.tileScale.x)
-          * this.tileSize.x * zoom.x,
-        ((img.worldOrigin.y - (this.min.y - (this.min.y - min.y))) / this.tileScale.y)
+        ((img.worldOrigin.x - min.x) / sx)
+          * this.tileSize.x * zoom.x ,
+        ((img.worldOrigin.y - (this.min.y - (this.min.y - min.y))) 
+          / sy)
           * this.tileSize.y * zoom.y
       )
-
-//      img.screenOrigin.set(
-//        ((img.worldOrigin.x +  min.x) / this.tileScale.x)
-//          * this.tileSize.x * 1/zoom.x,
-//        ((img.worldOrigin.y + min.y) / this.tileScale.y)
-//          * this.tileSize.y * 1/zoom.y
-//      )
 
       //TODO: create a vec2 thing that allows you to apply many calcs like this:
       // 
@@ -206,13 +184,9 @@ l.update = function (min, max, zoom) {
       // it would generate a function that applies this directly, so you don't have
       // to type it out twice.
 
-//      img.screenOrigin.size.set(
-//        this.tileSize.x * 1/zoom.x,
-//        this.tileSize.y * 1/zoom.y
-//      )
       img.screenOrigin.size.set(
-        this.tileSize.x * zoom.x,
-        this.tileSize.y * zoom.y
+        this.tileSize.x * zoom.x * 2,
+        this.tileSize.y * zoom.y * 2
       )
 
     }
