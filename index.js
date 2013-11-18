@@ -16,7 +16,8 @@ function Layer (opts) {
   opts = opts || {}
   this.size = opts.size || new Vec2(1024, 1024)
   this.scale = opts.scale || 1
-  
+  if(opts.getTile)
+    this._getTile = opts.getTile
   //tile size on map scale
   //defaults to degrees lat and long?
   console.log('SCALE', this.scale,  Math.pow(2, this.scale), 1024 / Math.pow(2, this.scale))
@@ -76,19 +77,7 @@ l.tileRange = function (min, max) {
   return this
 }
 
-
-l.getTile = function (x, y, z) {
-  /*
-  //baidu
-  var src = 'http://online1.map.bdimg.com/tile/?qt=tile'
-    + '&x=' + x
-    + '&y=' + y
-    + '&z=' + z
-    + '&styles=pl&udt=20131108'
-  ;
-  */
-
-  //google
+l._getTile = function (x, y, z) {
   var src = 'https://khms1.google.com/kh/v=134&src=app'
           + '&x=' + x
           + '&y=' + y
@@ -96,8 +85,15 @@ l.getTile = function (x, y, z) {
           + '&s=G'
   ;
 
-  var img
-  return img = h('img', {src: src, style: { left: px(0), top: px(0) }})
+  return h('img', {src: src})
+}
+
+l.getTile = function (x, y, z) {
+
+  var img = this._getTile(x, y, z)
+  img.style.top  = px(0)
+  img.style.left = px(0)
+  return img
 }
 
 l.add = function (x, y) {
